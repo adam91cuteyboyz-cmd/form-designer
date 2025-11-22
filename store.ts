@@ -130,7 +130,7 @@ export const useDesignerStore = create<DesignerState>((set) => ({
     // 2. Find overId and Insert
     // Logic: 
     // - If overId is a CONTAINER/FORM, insert INSIDE (at end).
-    // - If overId is a regular item, insert AFTER it (sibling).
+    // - If overId is a regular item, insert BEFORE it (sibling).
     // - If overId is 'root', push to root.
 
     if (overId === 'root' || overId === 'canvas-droppable') {
@@ -148,8 +148,8 @@ export const useDesignerStore = create<DesignerState>((set) => ({
                     // Insert inside
                     targetNode.children.push(activeNode!);
                 } else {
-                    // Insert after (sibling)
-                    nodes.splice(i + 1, 0, activeNode!);
+                    // Insert BEFORE sibling (allows inserting at index 0)
+                    nodes.splice(i, 0, activeNode!);
                 }
                 return true;
             }

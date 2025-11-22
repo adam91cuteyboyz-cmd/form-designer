@@ -11,6 +11,7 @@ import {
   defaultDropAnimationSideEffects,
   DropAnimation,
   DragOverEvent,
+  closestCorners,
 } from '@dnd-kit/core';
 import { Sidebar } from './components/Sidebar';
 import { Canvas } from './components/Canvas';
@@ -30,18 +31,6 @@ const dropAnimation: DropAnimation = {
     },
   }),
   duration: 0, 
-};
-
-// Helper to find a node in the tree
-const findNode = (nodes: FormNode[], id: string): FormNode | undefined => {
-  for (const node of nodes) {
-    if (node.id === id) return node;
-    if (node.children) {
-      const found = findNode(node.children, id);
-      if (found) return found;
-    }
-  }
-  return undefined;
 };
 
 function App() {
@@ -89,7 +78,7 @@ function App() {
         let parentId: string | null = null;
         let index: number | undefined = undefined;
 
-        // If dropping over a container/form, add inside it
+        // If dropping over a container/form, add inside it at the end
         if (overData?.isContainer) {
              parentId = over.id as string;
              // Index undefined means append to end
@@ -97,25 +86,31 @@ function App() {
              parentId = null; // Root
              index = nodes.length;
         } else {
-            // Dropping over a regular item - add sibling
-            // We don't easily know the parent of 'over', so we let a hypothetical store action handle it?
-            // Current addNode requires strict parentId.
-            // Simplification for sidebar drops:
-            // If over a non-container item, find its parent.
-            // This is computationally expensive to find parent here without store support.
-            // For now, sidebar drops default to Root or Container (if dropped on container).
-            // If dropped on a leaf node, we can try to find that node in the tree to get its parent.
-            const findParent = (nodes: FormNode[], childId: string): string | null => {
-                for(const node of nodes) {
-                    if(node.children.some(c => c.id === childId)) return node.id;
-                    const res = findParent(node.children, childId);
+            // Dropping over a regular item - insert next to it
+            const findParentAndIndex = (nodes: FormNode[], childId: string): { parentId: string | null, index: number } | null => {
+                 for(const node of nodes) {
+                    const idx = node.children.findIndex(c => c.id === childId);
+                    if(idx !== -1) return { parentId: node.id, index: idx }; // Insert after: idx + 1, Insert before: idx
+                    
+                    const res = findParentAndIndex(node.children, childId);
                     if(res) return res;
-                }
-                return null;
+                 }
+                 return null;
             };
-            
-            const pId = findParent(nodes, over.id as string);
-            if(pId) parentId = pId; // Found parent container
+
+            // Check root level first
+            const rootIdx = nodes.findIndex(n => n.id === over.id);
+            if (rootIdx !== -1) {
+                parentId = null;
+                index = rootIdx + 1; // Insert after for sidebar drops usually feels better, or before.
+            } else {
+                // Check nested
+                const res = findParentAndIndex(nodes, over.id as string);
+                if (res) {
+                    parentId = res.parentId;
+                    index = res.index + 1; // Insert after
+                }
+            }
         }
 
         addNode(activeData.componentType, parentId, index);
@@ -127,7 +122,7 @@ function App() {
         if (active.id !== over.id) {
              // Store logic handles: 
              // - If over is Container -> Insert Inside
-             // - If over is Leaf -> Insert After
+             // - If over is Leaf -> Insert Before
              moveNode(active.id as string, over.id as string);
         }
     }
@@ -142,6 +137,7 @@ function App() {
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDesignerStore } from '../store';
 import { ComponentType, FormNode } from '../types';
-import { Settings2, Type, AlignLeft, Palette, Layout, X } from 'lucide-react';
+import { Settings2, Type, AlignLeft, Palette, Layout, X, Image as ImageIcon } from 'lucide-react';
 
 const SectionHeader: React.FC<{ title: string; icon: React.ReactNode }> = ({ title, icon }) => (
     <div className="flex items-center gap-2 text-slate-800 font-medium text-sm mb-3 mt-6 border-b border-slate-100 pb-2">
@@ -17,9 +17,23 @@ const InputGroup: React.FC<{ label: string; children: React.ReactNode }> = ({ la
     </div>
 );
 
+// Recursive helper to find node by ID
+const findNodeById = (nodes: FormNode[], id: string): FormNode | undefined => {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    if (node.children && node.children.length > 0) {
+      const found = findNodeById(node.children, id);
+      if (found) return found;
+    }
+  }
+  return undefined;
+};
+
 export const PropertiesPanel: React.FC = () => {
   const { nodes, selectedNodeId, updateNode, selectNode } = useDesignerStore();
-  const selectedNode = nodes.find((n) => n.id === selectedNodeId);
+  
+  // Use recursive search to find the selected node in the tree
+  const selectedNode = selectedNodeId ? findNodeById(nodes, selectedNodeId) : undefined;
 
   if (!selectedNode) {
     return (
