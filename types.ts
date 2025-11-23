@@ -32,6 +32,10 @@ export interface ComponentProps {
   className?: string;
   style?: CSSProperties;
   buttonType?: 'submit' | 'button' | 'reset';
+  
+  // Layout props
+  columns?: number;
+  gap?: number;
 }
 
 export interface FormNode {
@@ -50,18 +54,24 @@ export interface DragData {
 
 export const DEFAULT_PROPS: Record<ComponentType, ComponentProps> = {
   [ComponentType.CONTAINER]: {
-    style: { padding: '20px', border: '1px dashed #cbd5e1', borderRadius: '8px', backgroundColor: '#ffffff', minHeight: '100px' }
+    style: { padding: '20px', border: '1px dashed #cbd5e1', borderRadius: '8px', backgroundColor: '#ffffff', minHeight: '100px' },
+    columns: 1,
+    gap: 16
   },
   [ComponentType.FORM]: {
     label: 'My Form',
-    style: { padding: '24px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#ffffff', width: '100%', minHeight: '150px' }
+    style: { padding: '24px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#ffffff', width: '100%', minHeight: '150px' },
+    columns: 1,
+    gap: 16
   },
   [ComponentType.TABS]: {
     style: { width: '100%', backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0' }
   },
   [ComponentType.TAB_ITEM]: {
     label: 'Tab',
-    style: { padding: '20px', minHeight: '100px' }
+    style: { padding: '20px', minHeight: '100px' },
+    columns: 1,
+    gap: 16
   },
   [ComponentType.INPUT]: {
     label: 'Text Input',

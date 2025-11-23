@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDesignerStore } from '../store';
 import { FormNode, ComponentType } from '../types';
@@ -56,16 +56,6 @@ const SortableNode: React.FC<SortableNodeProps> = ({ node, isSelected, onClick }
     transform: CSS.Translate.toString(transform),
     transition,
   };
-
-  if (isDragging) {
-    return (
-      <div
-        ref={setNodeRef}
-        style={style}
-        className="opacity-40 bg-slate-100 border-2 border-blue-500 rounded-lg h-[80px] w-full my-2"
-      />
-    );
-  }
   
   const isContainer = node.type === ComponentType.CONTAINER || 
                       node.type === ComponentType.FORM || 
@@ -80,6 +70,37 @@ const SortableNode: React.FC<SortableNodeProps> = ({ node, isSelected, onClick }
       }
       return node.children;
   }, [isTabs, node.children, activeTabId]);
+
+  // Calculate Grid Style
+  const columns = node.props.columns || 1;
+  const gap = node.props.gap || 16;
+  
+  // Only apply grid to containers (Container, Form, TabItem). Tabs component wrapper doesn't need grid usually.
+  const showGrid = isContainer && columns > 1;
+  
+  const containerStyle = useMemo(() => {
+      if (showGrid) {
+          return {
+              display: 'grid',
+              gridTemplateColumns: `repeat(${columns}, 1fr)`,
+              gap: `${gap}px`,
+          } as React.CSSProperties;
+      }
+      return undefined;
+  }, [showGrid, columns, gap]);
+
+  // Switch strategy based on layout
+  const sortingStrategy = showGrid ? rectSortingStrategy : verticalListSortingStrategy;
+
+  if (isDragging) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="opacity-40 bg-slate-100 border-2 border-blue-500 rounded-lg h-[80px] w-full my-2"
+      />
+    );
+  }
 
   return (
     <div
@@ -119,8 +140,11 @@ const SortableNode: React.FC<SortableNodeProps> = ({ node, isSelected, onClick }
             onTabChange={setActiveTabId}
         >
             {(isContainer || isTabs) && (
-                <SortableContext items={visibleChildren.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                    <div className={clsx("w-full transition-colors rounded", !isTabs && "min-h-[50px]")}>
+                <SortableContext items={visibleChildren.map(c => c.id)} strategy={sortingStrategy}>
+                    <div 
+                        className={clsx("w-full transition-colors rounded", !isTabs && "min-h-[50px]")}
+                        style={containerStyle}
+                    >
                         {visibleChildren.map((child) => (
                              <SortableNode
                                 key={child.id}

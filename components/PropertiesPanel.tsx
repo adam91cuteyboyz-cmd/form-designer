@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDesignerStore } from '../store';
 import { ComponentType, FormNode } from '../types';
-import { Settings2, Type, AlignLeft, Palette, Layout, X, Image as ImageIcon } from 'lucide-react';
+import { Settings2, Type, AlignLeft, Palette, Layout, X, Image as ImageIcon, Grid } from 'lucide-react';
 
 const SectionHeader: React.FC<{ title: string; icon: React.ReactNode }> = ({ title, icon }) => (
     <div className="flex items-center gap-2 text-slate-800 font-medium text-sm mb-3 mt-6 border-b border-slate-100 pb-2">
@@ -59,6 +59,8 @@ export const PropertiesPanel: React.FC = () => {
     });
   };
 
+  const isContainer = [ComponentType.CONTAINER, ComponentType.FORM, ComponentType.TAB_ITEM].includes(selectedNode.type);
+
   return (
     <div className="w-80 bg-white border-l border-slate-200 flex flex-col h-full shadow-xl z-30">
       <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
@@ -75,6 +77,42 @@ export const PropertiesPanel: React.FC = () => {
 
       <div className="flex-1 overflow-y-auto p-6">
         
+        {/* Layout Settings for Containers */}
+        {isContainer && (
+            <>
+                <SectionHeader title="Layout Settings" icon={<Grid className="w-4 h-4"/>} />
+                
+                <InputGroup label={`Grid Columns: ${selectedNode.props.columns || 1}`}>
+                    <input
+                        type="range"
+                        min="1"
+                        max="4"
+                        step="1"
+                        className="w-full accent-blue-500"
+                        value={selectedNode.props.columns || 1}
+                        onChange={(e) => handlePropChange('columns', parseInt(e.target.value))}
+                    />
+                    <div className="flex justify-between text-xs text-slate-400 mt-1">
+                        <span>1</span>
+                        <span>2</span>
+                        <span>3</span>
+                        <span>4</span>
+                    </div>
+                </InputGroup>
+
+                <InputGroup label="Grid Gap (px)">
+                     <input
+                        type="number"
+                        min="0"
+                        max="64"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={selectedNode.props.gap || 16}
+                        onChange={(e) => handlePropChange('gap', parseInt(e.target.value))}
+                    />
+                </InputGroup>
+            </>
+        )}
+
         {/* Common Text/Label Props */}
         {(selectedNode.props.label !== undefined || selectedNode.props.content !== undefined || selectedNode.props.placeholder !== undefined) && (
              <SectionHeader title="Content" icon={<Type className="w-4 h-4"/>} />
