@@ -11,7 +11,8 @@ import {
   AlignLeft,
   Heading,
   BoxSelect,
-  AppWindow
+  AppWindow,
+  Folder
 } from 'lucide-react';
 
 interface SidebarItemProps {
@@ -68,6 +69,7 @@ export const Sidebar: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
              <SidebarItem type={ComponentType.CONTAINER} label="Container" icon={<LayoutTemplate className="w-6 h-6"/>} />
              <SidebarItem type={ComponentType.FORM} label="Form" icon={<AppWindow className="w-6 h-6"/>} />
+             <SidebarItem type={ComponentType.TABS} label="Tabs" icon={<Folder className="w-6 h-6"/>} />
           </div>
         </div>
 

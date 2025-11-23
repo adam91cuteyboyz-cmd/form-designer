@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -29,11 +29,28 @@ const SortableNode: React.FC<SortableNodeProps> = ({ node, isSelected, onClick }
           type: 'canvas-item', 
           id: node.id,
           // Pass children info to help drag handling determine if this is a container
-          isContainer: node.type === ComponentType.CONTAINER || node.type === ComponentType.FORM
+          isContainer: node.type === ComponentType.CONTAINER || 
+                       node.type === ComponentType.FORM || 
+                       node.type === ComponentType.TABS ||
+                       node.type === ComponentType.TAB_ITEM
       } 
   });
 
   const { removeNode, selectNode, selectedNodeId } = useDesignerStore();
+
+  // Tabs specific state
+  const [activeTabId, setActiveTabId] = useState<string | null>(null);
+
+  // Initialize active tab if needed
+  useEffect(() => {
+    if (node.type === ComponentType.TABS && node.children.length > 0) {
+        // If no active tab or active tab is not in children anymore, set to first
+        const childIds = node.children.map(c => c.id);
+        if (!activeTabId || !childIds.includes(activeTabId)) {
+            setActiveTabId(node.children[0].id);
+        }
+    }
+  }, [node.type, node.children, activeTabId]);
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -50,7 +67,19 @@ const SortableNode: React.FC<SortableNodeProps> = ({ node, isSelected, onClick }
     );
   }
   
-  const isContainer = node.type === ComponentType.CONTAINER || node.type === ComponentType.FORM;
+  const isContainer = node.type === ComponentType.CONTAINER || 
+                      node.type === ComponentType.FORM || 
+                      node.type === ComponentType.TAB_ITEM;
+  
+  const isTabs = node.type === ComponentType.TABS;
+
+  // For Tabs, we only want to render the ACTIVE child in the SortableContext
+  const visibleChildren = useMemo(() => {
+      if (isTabs) {
+          return node.children.filter(c => c.id === activeTabId);
+      }
+      return node.children;
+  }, [isTabs, node.children, activeTabId]);
 
   return (
     <div
@@ -59,7 +88,7 @@ const SortableNode: React.FC<SortableNodeProps> = ({ node, isSelected, onClick }
       className={clsx(
         "group relative my-3 rounded-lg border-2 transition-all bg-white hover:shadow-md cursor-grab active:cursor-grabbing",
         isSelected ? "border-blue-500 ring-1 ring-blue-500 z-10" : "border-transparent hover:border-blue-200",
-        isOver && isContainer ? "ring-2 ring-blue-400 bg-blue-50/50" : ""
+        isOver && (isContainer || isTabs) ? "ring-2 ring-blue-400 bg-blue-50/50" : ""
       )}
       onClick={(e) => {
         e.stopPropagation();
@@ -80,13 +109,19 @@ const SortableNode: React.FC<SortableNodeProps> = ({ node, isSelected, onClick }
       {/* Content */}
       <div className="p-4 relative">
         {/* For non-containers, overlay prevents interaction. For containers, we need to interact with children */}
-        {!isContainer && <div className="absolute inset-0 z-[5]" />} 
+        {!isContainer && !isTabs && <div className="absolute inset-0 z-[5]" />} 
         
-        <FormElementRenderer type={node.type} props={node.props}>
-            {isContainer && (
-                <SortableContext items={node.children.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                    <div className="min-h-[50px] w-full transition-colors rounded">
-                        {node.children.map((child) => (
+        <FormElementRenderer 
+            type={node.type} 
+            props={node.props} 
+            node={node}
+            activeTabId={activeTabId}
+            onTabChange={setActiveTabId}
+        >
+            {(isContainer || isTabs) && (
+                <SortableContext items={visibleChildren.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                    <div className={clsx("w-full transition-colors rounded", !isTabs && "min-h-[50px]")}>
+                        {visibleChildren.map((child) => (
                              <SortableNode
                                 key={child.id}
                                 node={child}

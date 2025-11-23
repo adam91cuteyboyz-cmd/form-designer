@@ -1,5 +1,5 @@
 import React from 'react';
-import { ComponentType, ComponentProps } from '../types';
+import { ComponentType, ComponentProps, FormNode } from '../types';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -7,12 +7,22 @@ interface ElementRendererProps {
   type: ComponentType;
   props: ComponentProps;
   children?: React.ReactNode; // Support nested children
+  node?: FormNode; // Access to node structure for tabs
+  activeTabId?: string | null;
+  onTabChange?: (id: string) => void;
 }
 
 // Helper for merging styles safely
 const cn = (...inputs: (string | undefined | null | false)[]) => twMerge(clsx(inputs));
 
-export const FormElementRenderer: React.FC<ElementRendererProps> = ({ type, props, children }) => {
+export const FormElementRenderer: React.FC<ElementRendererProps> = ({ 
+    type, 
+    props, 
+    children,
+    node,
+    activeTabId,
+    onTabChange
+}) => {
   const { label, placeholder, required, style, content, options, src, alt, buttonType } = props;
 
   const baseLabelClass = "block text-sm font-medium text-slate-700 mb-1 pointer-events-none";
@@ -163,7 +173,54 @@ export const FormElementRenderer: React.FC<ElementRendererProps> = ({ type, prop
                      </div>
                 )}
             </div>
-        )
+        );
+
+    case ComponentType.TABS:
+        return (
+            <div style={style} className={cn("flex flex-col", props.className)}>
+                {/* Tab Headers */}
+                <div className="flex border-b border-slate-200 bg-slate-50/50 rounded-t-lg overflow-x-auto">
+                    {node?.children.map((child) => (
+                        <button
+                            key={child.id}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onTabChange?.(child.id);
+                            }}
+                            className={cn(
+                                "px-4 py-3 text-sm font-medium transition-colors focus:outline-none border-b-2 whitespace-nowrap",
+                                activeTabId === child.id
+                                    ? "border-blue-500 text-blue-600 bg-white"
+                                    : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"
+                            )}
+                        >
+                            {child.props.label || 'Tab'}
+                        </button>
+                    ))}
+                </div>
+                {/* Tab Content Area */}
+                <div className="p-1 min-h-[100px]">
+                    {children}
+                    {(!children || (Array.isArray(children) && children.length === 0)) && (
+                        <div className="text-slate-300 text-center py-8 text-sm italic">
+                            No tabs
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+
+    case ComponentType.TAB_ITEM:
+        return (
+            <div style={style} className={cn("h-full", props.className)}>
+                {children}
+                {(!children || (Array.isArray(children) && children.length === 0)) && (
+                    <div className="text-slate-300 text-center py-12 text-sm italic border-2 border-dashed border-slate-100 rounded-lg">
+                        Drop content for {label} here
+                    </div>
+                )}
+            </div>
+        );
 
     default:
       return <div className="text-red-500">Unknown Component: {type}</div>;

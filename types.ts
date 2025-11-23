@@ -4,6 +4,8 @@ export enum ComponentType {
   // Layout
   CONTAINER = 'container',
   FORM = 'form',
+  TABS = 'tabs',
+  TAB_ITEM = 'tab_item',
   
   // Form Controls
   INPUT = 'input',
@@ -43,6 +45,7 @@ export interface DragData {
   type: 'sidebar-item' | 'canvas-item';
   componentType?: ComponentType;
   id?: string;
+  isContainer?: boolean;
 }
 
 export const DEFAULT_PROPS: Record<ComponentType, ComponentProps> = {
@@ -52,6 +55,13 @@ export const DEFAULT_PROPS: Record<ComponentType, ComponentProps> = {
   [ComponentType.FORM]: {
     label: 'My Form',
     style: { padding: '24px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#ffffff', width: '100%', minHeight: '150px' }
+  },
+  [ComponentType.TABS]: {
+    style: { width: '100%', backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0' }
+  },
+  [ComponentType.TAB_ITEM]: {
+    label: 'Tab',
+    style: { padding: '20px', minHeight: '100px' }
   },
   [ComponentType.INPUT]: {
     label: 'Text Input',

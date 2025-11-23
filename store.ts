@@ -74,6 +74,14 @@ const updateNodeRecursively = (nodes: FormNode[], id: string, updates: any): For
   });
 };
 
+// Helper to check if a type is a container
+const isContainerType = (type: ComponentType) => {
+  return type === ComponentType.CONTAINER || 
+         type === ComponentType.FORM || 
+         type === ComponentType.TABS || 
+         type === ComponentType.TAB_ITEM;
+};
+
 export const useDesignerStore = create<DesignerState>((set) => ({
   nodes: [],
   selectedNodeId: null,
@@ -85,6 +93,15 @@ export const useDesignerStore = create<DesignerState>((set) => ({
       props: { ...DEFAULT_PROPS[type] },
       children: []
     };
+
+    // Pre-populate tabs with default items
+    if (type === ComponentType.TABS) {
+        newNode.children = [
+            { id: generateId(), type: ComponentType.TAB_ITEM, props: { label: 'Tab 1', style: DEFAULT_PROPS[ComponentType.TAB_ITEM].style }, children: [] },
+            { id: generateId(), type: ComponentType.TAB_ITEM, props: { label: 'Tab 2', style: DEFAULT_PROPS[ComponentType.TAB_ITEM].style }, children: [] },
+            { id: generateId(), type: ComponentType.TAB_ITEM, props: { label: 'Tab 3', style: DEFAULT_PROPS[ComponentType.TAB_ITEM].style }, children: [] },
+        ];
+    }
     
     return { 
       nodes: addNodeRecursively(state.nodes, parentId, newNode, index),
@@ -128,11 +145,6 @@ export const useDesignerStore = create<DesignerState>((set) => ({
     if (!activeNode) return { nodes: state.nodes };
 
     // 2. Find overId and Insert
-    // Logic: 
-    // - If overId is a CONTAINER/FORM, insert INSIDE (at end).
-    // - If overId is a regular item, insert BEFORE it (sibling).
-    // - If overId is 'root', push to root.
-
     if (overId === 'root' || overId === 'canvas-droppable') {
         cloneNodes.push(activeNode);
         return { nodes: cloneNodes };
@@ -144,11 +156,11 @@ export const useDesignerStore = create<DesignerState>((set) => ({
                 const targetNode = nodes[i];
                 
                 // Check if target is a container
-                if (targetNode.type === ComponentType.CONTAINER || targetNode.type === ComponentType.FORM) {
+                if (isContainerType(targetNode.type)) {
                     // Insert inside
                     targetNode.children.push(activeNode!);
                 } else {
-                    // Insert BEFORE sibling (allows inserting at index 0)
+                    // Insert BEFORE sibling
                     nodes.splice(i, 0, activeNode!);
                 }
                 return true;
